@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nanobot</title>
+    <meta name="description" content="a simple chatbot interface powered by chomre's built-in window.ai (gemini nano)" />
+    <meta name="author" content="rds_agi" />
+    <meta name="keywords" content="chatbot, gemini nano, chrome, browser, ai, assistant" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="nanobot" />
+    <meta property="og:description" content="a simple chatbot interface powered by chomre's built-in window.ai (gemini nano)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nanobot.rdsx.dev" />
+    <meta property="og:image" content="https://nanobot.rdsx.dev/og.png" />
+    <meta property="og:site_name" content="nanobot" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@rds_agi" />
+    <meta name="twitter:creator" content="@rds_agi" />
+    <meta name="twitter:title" content="nanobot" />
+    <meta name="twitter:description" content="a simple chatbot interface powered by chomre's built-in window.ai (gemini nano)" />
+    <meta name="twitter:image" content="https://nanobot.rdsx.dev/og.png" />
+    <meta name="twitter:url" content="https://nanobot.rdsx.dev" />
+    <meta name="twitter:domain" content="nanobot.rdsx.dev" />
+
+    <link rel="shortcut icon" href="https://rdsx.dev/favicon.png" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      * {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+          sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      #container {
+        position: relative;
+        width: 100%;
+        max-width: 40rem;
+        margin-left: auto;
+        margin-right: auto;
+        height: 100vh;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      #chatbox {
+        flex-grow: 1;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+      }
+
+      .message-container {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .message-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .user-icon {
+       padding-top: 0.7rem;
+      }
+
+      .bot-icon {
+        padding-top: 0.7rem;
+      }
+
+      .message {
+        flex-grow: 1;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+      }
+
+      .bot {
+        background-color: #333;
+        color: white;
+      }
+
+      .user {
+        background-color: #f0f0f0;
+        color: black;
+      }
+
+      form {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      #message {
+        flex-grow: 1;
+        height: 2.5rem;
+        border-radius: 0.3rem;
+        padding: 0.5rem;
+        resize: none;
+        border: 1px solid #ccc;
+      }
+
+      #submit-btn {
+        height: 2.5rem;
+        padding: 0 1rem;
+        border: none;
+        border-radius: 0.3rem;
+        cursor: pointer;
+        background-color: #000000;
+        color: white;
+        font-weight: bold;
+      }
+
+      #empty-screen, #warning {
+        text-align: center;
+        padding: 2rem;
+      }
+
+      #warning {
+        background-color: #ffe6e6;
+        border: 1px solid #ffcccc;
+        border-radius: 0.5rem;
+        color: #333;
+        text-align: left;
+      }
+
+      #warning h2 {
+        text-align: center;
+      }
+
+      ol li {
+        margin-bottom: 0.5rem;
+        margin-left: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="chatbox"></div>
+      <form>
+        <textarea id="message" placeholder="Message Nanobot"></textarea>
+        <button type="submit" id="submit-btn">Send</button>
+      </form>
+    </div>
+    <script type="module">
+      const form = document.querySelector("form");
+      const messageInput = document.querySelector("#message");
+      const chatbox = document.querySelector("#chatbox");
+      const container = document.querySelector("#container");
+      let textSession
+
+      const messages = [];
+
+      const renderMessages = () => {
+        if (messages.length === 0) {
+          chatbox.innerHTML = `
+            <div id="empty-screen">
+              <h1>nanobot 💬</h1>
+              <p>Start a conversation by sending a message.</p>
+            </div>
+          `;
+        } else {
+          chatbox.innerHTML = messages
+            .map((message) => {
+              const iconContent = message.type === 'user' ? '👤' : '🤖';
+              return `
+                <div class="message-container">
+                  <div class="message-icon ${message.type}-icon">${iconContent}</div>
+                  <div class="message ${message.type}">${marked.parse(message.value)}</div>
+                </div>
+              `;
+            })
+            .join("");
+        }
+        chatbox.scrollTop = chatbox.scrollHeight;
+      };
+
+      const systemPrompt = `You are an AI assistant. Your primary function is to assist users with their questions and tasks. Please adhere to the following guidelines:
+
+1. Be polite, helpful, and concise in your responses.
+2. Provide accurate information to the best of your ability.
+3. If you're unsure about something, admit it and offer to find more information.
+4. Respect user privacy and don't ask for personal information.
+5. Avoid discussing sensitive topics or giving advice on critical matters like health, finance, or legal issues.
+6. Use markdown formatting for better readability when appropriate.
+
+Few information about yourself:
+- You are powered by Chrome's built-in window.ai (Gemini Nano).
+- Your name is Nanobot.
+
+Remember, you're here to assist and engage in friendly conversation. Let's begin!`;
+
+      const handleChat = async (userMessage) => {
+        messages.push({ type: "user", value: userMessage });
+        renderMessages();
+
+        let prompt = systemPrompt + "\n\n";
+        messages.forEach((message) => {
+          prompt += `${message.type === 'user' ? 'Human' : 'Assistant'}: ${message.value}\n`;
+        });
+        prompt += "Assistant: ";
+        console.log(prompt)
+        const response = await textSession.promptStreaming(prompt);
+        let botMessage = "";
+
+        let buffer = "";
+        for await (const responseMessage of response) {
+          buffer = responseMessage;
+          
+          const cleanedBuffer = buffer.replace(/^(assistant|bot|nanobot):\s*/i, "").trim();
+
+          if (cleanedBuffer.length > 4) {
+            botMessage = cleanedBuffer;
+            messages.push({ type: "bot", value: botMessage });
+            renderMessages();
+            messages.pop();
+          }
+        }
+
+        if (botMessage.trim() !== "") {
+          messages.push({ type: "bot", value: botMessage.trim() });
+          renderMessages();
+        }
+      };
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const userMessage = messageInput.value.trim();
+        if (userMessage) {
+          messageInput.value = "";
+          handleChat(userMessage);
+        }
+      });
+
+      messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          const userMessage = messageInput.value.trim();
+          if (userMessage) {
+            messageInput.value = "";
+            handleChat(userMessage);
+          }
+        }
+      });
+
+      if (!window.ai) {
+        chatbox.innerHTML = `
+          <div id="warning">
+            <h2>Browser Compatibility Warning</h2><br />
+            <p>Please make sure you are using Chrome (Dev / Canary) version 127 or higher.</p><br />
+            <p>Once your browser is installed, ensure the following flags are set:</p><br />
+            <ol>
+              <li><strong>Step 1:</strong> chrome://flags/#prompt-api-for-gemini-nano<br>Select 'Enabled'</li>
+              <li><strong>Step 2:</strong> chrome://flags/#optimization-guide-on-device-model<br>Select 'Enabled BypassPrefRequirement'</li>
+              <li><strong>Step 3:</strong> chrome://components<br>Click 'Check for Update' on Optimization Guide On Device Model to download the model. If you don't see Optimization Guide, ensure you have set the flags correctly above, relaunch your browser, and refresh the page.</li>
+            </ol>
+          </div>
+        `;
+      } else {
+        textSession = await window.ai.createTextSession();
+        renderMessages();
+      }
+    </script>
+  </body>
+</html>
