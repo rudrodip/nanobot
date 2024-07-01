@@ -208,7 +208,6 @@ Remember, you're here to assist and engage in friendly conversation. Let's begin
           prompt += `${message.type === 'user' ? 'Human' : 'Assistant'}: ${message.value}\n`;
         });
         prompt += "Assistant: ";
-        console.log(prompt)
         const response = await textSession.promptStreaming(prompt);
         let botMessage = "";
 
